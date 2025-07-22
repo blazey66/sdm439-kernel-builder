@@ -124,6 +124,11 @@ jobs:
                 exit 1
             fi
 
+        - name: 'Setup KernelSU'
+          working-directory: './kernel-src'
+          run: |
+            curl -LSs "https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh" | bash -
+
         - name: 'Clone any submodules if present'
           working-directory: './kernel-src'
           run: |
