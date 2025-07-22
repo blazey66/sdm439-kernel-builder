@@ -86,12 +86,11 @@ jobs:
             sudo apt build-dep -y linux
 
             # Download AOSP Clang 19.0.1
-            mkdir -p ./aosp-clang
-            cd ./aosp-clang
+            mkdir -p ~/aosp-clang
+            cd ~/aosp-clang
             wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r530567.tar.gz
             tar -xzf clang-r530567.tar.gz
-            cd ..
-
+            
             # Install some general dependencies
             sudo apt-get install -y p7zip-full tar bzip2 unrar gzip zip unzip python3-dev repo
 
@@ -135,14 +134,18 @@ jobs:
         - name: 'Generate the kernel .config file'
           working-directory: './kernel-src'
           run: |
+            # Ensure AOSP Clang is first in PATH
             export PATH=$(realpath ~/aosp-clang/bin):$PATH
+            
+            # Set up cross-compilation variables
             export CLANG_TRIPLE=aarch64-linux-gnu-
             if [ ${{ github.event.inputs.KERNEL_ARCH }} == 'arm' ]; then
                 export CLANG_TRIPLE=arm-linux-gnueabi-
             fi
 
+            # Generate kernel config with integrated assembler
             make ARCH=${{ github.event.inputs.KERNEL_ARCH }} \
-                CC=clang \
+                CC="clang -fintegrated-as" \
                 LD=ld.lld \
                 AR=llvm-ar \
                 NM=llvm-nm \
@@ -151,8 +154,8 @@ jobs:
                 OBJDUMP=llvm-objdump \
                 OBJSIZE=llvm-size \
                 READELF=llvm-readelf \
-                HOSTCC=clang \
-                HOSTCXX=clang++ \
+                HOSTCC="clang -fintegrated-as" \
+                HOSTCXX="clang++ -fintegrated-as" \
                 HOSTAR=llvm-ar \
                 HOSTLD=ld.lld \
                 CROSS_COMPILE=$CLANG_TRIPLE \
@@ -166,14 +169,18 @@ jobs:
         - name: 'Build kernel'
           working-directory: './kernel-src'
           run: |
+            # Ensure AOSP Clang is first in PATH
             export PATH=$(realpath ~/aosp-clang/bin):$PATH
+            
+            # Set up cross-compilation variables
             export CLANG_TRIPLE=aarch64-linux-gnu-
             if [ ${{ github.event.inputs.KERNEL_ARCH }} == 'arm' ]; then
                 export CLANG_TRIPLE=arm-linux-gnueabi-
             fi
 
+            # Build kernel with integrated assembler
             make ARCH=${{ github.event.inputs.KERNEL_ARCH }} \
-                CC=clang \
+                CC="clang -fintegrated-as" \
                 LD=ld.lld \
                 AR=llvm-ar \
                 NM=llvm-nm \
@@ -182,8 +189,8 @@ jobs:
                 OBJDUMP=llvm-objdump \
                 OBJSIZE=llvm-size \
                 READELF=llvm-readelf \
-                HOSTCC=clang \
-                HOSTCXX=clang++ \
+                HOSTCC="clang -fintegrated-as" \
+                HOSTCXX="clang++ -fintegrated-as" \
                 HOSTAR=llvm-ar \
                 HOSTLD=ld.lld \
                 CROSS_COMPILE=$CLANG_TRIPLE \
