@@ -90,6 +90,7 @@ jobs:
             cd ~/aosp-clang
             wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r530567.tar.gz
             tar -xzf clang-r530567.tar.gz
+            rm -f clang-r530567.tar.gz
             
             # Install some general dependencies
             sudo apt-get install -y p7zip-full tar bzip2 unrar gzip zip unzip python3-dev repo
@@ -134,18 +135,19 @@ jobs:
         - name: 'Generate the kernel .config file'
           working-directory: './kernel-src'
           run: |
-            # Ensure AOSP Clang is first in PATH
+            # Clean environment and set up AOSP Clang
             export PATH=$(realpath ~/aosp-clang/bin):$PATH
-            
-            # Set up cross-compilation variables
             export CLANG_TRIPLE=aarch64-linux-gnu-
+            export CROSS_COMPILE=aarch64-linux-gnu-
+            
             if [ ${{ github.event.inputs.KERNEL_ARCH }} == 'arm' ]; then
                 export CLANG_TRIPLE=arm-linux-gnueabi-
+                export CROSS_COMPILE=arm-linux-gnueabi-
             fi
 
-            # Generate kernel config with integrated assembler
+            # Generate kernel config with AOSP Clang and integrated assembler
             make ARCH=${{ github.event.inputs.KERNEL_ARCH }} \
-                CC="clang -fintegrated-as" \
+                CC="clang" \
                 LD=ld.lld \
                 AR=llvm-ar \
                 NM=llvm-nm \
@@ -154,12 +156,14 @@ jobs:
                 OBJDUMP=llvm-objdump \
                 OBJSIZE=llvm-size \
                 READELF=llvm-readelf \
-                HOSTCC="clang -fintegrated-as" \
-                HOSTCXX="clang++ -fintegrated-as" \
+                HOSTCC="clang" \
+                HOSTCXX="clang++" \
                 HOSTAR=llvm-ar \
                 HOSTLD=ld.lld \
-                CROSS_COMPILE=$CLANG_TRIPLE \
+                CROSS_COMPILE=$CROSS_COMPILE \
                 CLANG_TRIPLE=$CLANG_TRIPLE \
+                LLVM=1 \
+                LLVM_IAS=1 \
                 -j$(nproc --all) O=out ${{ github.event.inputs.KERNEL_CONFIGS }}
 
             echo 'CONFIG_LOCALVERSION_AUTO=n' >> out/.config
@@ -169,18 +173,19 @@ jobs:
         - name: 'Build kernel'
           working-directory: './kernel-src'
           run: |
-            # Ensure AOSP Clang is first in PATH
+            # Clean environment and set up AOSP Clang
             export PATH=$(realpath ~/aosp-clang/bin):$PATH
-            
-            # Set up cross-compilation variables
             export CLANG_TRIPLE=aarch64-linux-gnu-
+            export CROSS_COMPILE=aarch64-linux-gnu-
+            
             if [ ${{ github.event.inputs.KERNEL_ARCH }} == 'arm' ]; then
                 export CLANG_TRIPLE=arm-linux-gnueabi-
+                export CROSS_COMPILE=arm-linux-gnueabi-
             fi
 
-            # Build kernel with integrated assembler
+            # Build kernel with AOSP Clang and integrated assembler
             make ARCH=${{ github.event.inputs.KERNEL_ARCH }} \
-                CC="clang -fintegrated-as" \
+                CC="clang" \
                 LD=ld.lld \
                 AR=llvm-ar \
                 NM=llvm-nm \
@@ -189,12 +194,14 @@ jobs:
                 OBJDUMP=llvm-objdump \
                 OBJSIZE=llvm-size \
                 READELF=llvm-readelf \
-                HOSTCC="clang -fintegrated-as" \
-                HOSTCXX="clang++ -fintegrated-as" \
+                HOSTCC="clang" \
+                HOSTCXX="clang++" \
                 HOSTAR=llvm-ar \
                 HOSTLD=ld.lld \
-                CROSS_COMPILE=$CLANG_TRIPLE \
+                CROSS_COMPILE=$CROSS_COMPILE \
                 CLANG_TRIPLE=$CLANG_TRIPLE \
+                LLVM=1 \
+                LLVM_IAS=1 \
                 -j$(nproc --all) O=out Image.gz-dtb dtbo.img
 
         - name: 'Prepare and Package with AnyKernel3'
