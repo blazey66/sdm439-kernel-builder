@@ -1,0 +1,10 @@
+--- a/drivers/kernelsu/ksu.c
++++ b/drivers/kernelsu/ksu.c
+@@
+ #include <linux/module.h>
++/* 4.19 lacks MODULE_IMPORT_NS – add a stub */
++#ifndef MODULE_IMPORT_NS
++#define MODULE_IMPORT_NS(ns) MODULE_INFO(import_ns, ns)
++#endif
++
+ MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
